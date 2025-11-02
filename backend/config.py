@@ -36,7 +36,8 @@ class Config:
     OPENWEATHER_BASE_URL = 'https://api.openweathermap.org/data/2.5'
     
     # CORS Configuration
-    CORS_ORIGINS = [
+    # Allow local dev and production frontend origins
+    _base_origins = [
         'http://localhost:3000',
         'http://127.0.0.1:3000',
         'http://localhost:3001',
@@ -45,4 +46,17 @@ class Config:
         'http://127.0.0.1:3002',
         'http://localhost:3004',
         'http://127.0.0.1:3004',
+        # Netlify production site (explicit)
+        'https://agritech-revasa.netlify.app',
     ]
+
+    # Optionally include environment-provided frontend URLs
+    _env_origins = [
+        os.environ.get('FRONTEND_URL'),
+        os.environ.get('NETLIFY_SITE_URL'),  # e.g., https://your-site.netlify.app
+        os.environ.get('DEPLOY_URL'),        # Netlify deploy preview URL
+        os.environ.get('VERCEL_URL') and f"https://{os.environ.get('VERCEL_URL')}",
+    ]
+
+    # Final list without empty values
+    CORS_ORIGINS = [o for o in (_base_origins + _env_origins) if o]
