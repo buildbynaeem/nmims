@@ -13,6 +13,10 @@ declare global {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1'
 
+if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_API_BASE_URL) {
+  console.error('CRITICAL: NEXT_PUBLIC_API_BASE_URL is not set for this deployment. API calls will fail.')
+}
+
 export interface ApiResponse<T = unknown> {
   success: boolean
   data?: T
