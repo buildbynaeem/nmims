@@ -13,8 +13,18 @@ declare global {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1'
 
-if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_API_BASE_URL) {
-  console.error('CRITICAL: NEXT_PUBLIC_API_BASE_URL is not set for this deployment. API calls will fail.')
+// Add production environment check
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_API_BASE_URL) {
+  console.error('CRITICAL: NEXT_PUBLIC_API_BASE_URL is not set in production environment')
+}
+
+// Check if we're in production and using localhost (which will fail)
+const isProductionWithLocalhost = typeof window !== 'undefined' && 
+  process.env.NODE_ENV === 'production' && 
+  API_BASE_URL.includes('localhost')
+
+if (isProductionWithLocalhost) {
+  console.error('ERROR: Production deployment is trying to use localhost API URL:', API_BASE_URL)
 }
 
 export interface ApiResponse<T = unknown> {
@@ -154,6 +164,14 @@ class ApiService {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
+      // Check if we're trying to use localhost in production
+      if (isProductionWithLocalhost) {
+        return {
+          success: false,
+          error: 'API not configured for production. Please set NEXT_PUBLIC_API_BASE_URL environment variable.'
+        }
+      }
+
       const headers = await this.getAuthHeaders()
       
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -183,9 +201,20 @@ class ApiService {
       return data
     } catch (error) {
       console.error('API request failed:', error)
+      
+      // Provide more specific error messages for common issues
+      let errorMessage = 'Network error'
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch')) {
+          errorMessage = 'Unable to connect to server. Please check your internet connection.'
+        } else {
+          errorMessage = error.message
+        }
+      }
+      
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Network error'
+        error: errorMessage
       }
     }
   }

@@ -8,6 +8,8 @@ publish = ".next"
 [build.environment]
 # Use a widely supported Node version for Next.js builds
 NODE_VERSION = "20"
+# API base URL for production deployment
+NEXT_PUBLIC_API_BASE_URL = "https://your-backend-domain.com/api/v1"
 
 [[plugins]]
 package = "@netlify/plugin-nextjs"
