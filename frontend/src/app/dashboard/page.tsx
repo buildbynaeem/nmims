@@ -29,6 +29,19 @@ import { toast } from 'sonner'
 import { apiService, type WeatherData, type ImageAnalysis, type SoilReport } from '@/lib/api'
 import useGeolocation from '@/hooks/useGeolocation'
 
+interface UserProfile {
+  id: number
+  clerk_user_id: string
+  email?: string | null
+  first_name?: string | null
+  last_name?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  location_updated_at?: string | null
+  created_at: string
+  updated_at: string
+}
+
 export default function DashboardPage() {
   const { user } = useUser()
   const { isSignedIn, getToken } = useAuth()
@@ -37,6 +50,8 @@ export default function DashboardPage() {
   const [recentSoilReports, setRecentSoilReports] = useState<SoilReport[]>([])
   const [loading, setLoading] = useState(true)
   const [weatherLoading, setWeatherLoading] = useState(false)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [hasStoredLocation, setHasStoredLocation] = useState(false)
 
   const {
     latitude,
@@ -48,9 +63,25 @@ export default function DashboardPage() {
     hasLocation
   } = useGeolocation()
 
+  // Fetch user profile data
+  const fetchUserProfile = async () => {
+    try {
+      const result = await apiService.getUserProfile()
+      if (result.success && result.data) {
+        setUserProfile(result.data.user)
+        const hasLocation = result.data.user.latitude !== null && result.data.user.longitude !== null
+        setHasStoredLocation(hasLocation)
+        return hasLocation
+      }
+    } catch (error) {
+      console.error('Profile fetch error:', error)
+    }
+    return false
+  }
+
   // Fetch weather data
   const fetchWeatherData = async () => {
-    if (!hasLocation) return
+    if (!hasStoredLocation) return
     
     setWeatherLoading(true)
     try {
@@ -87,6 +118,15 @@ export default function DashboardPage() {
     if (latitude && longitude) {
       const success = await updateLocationOnServer()
       if (success) {
+        // Mark stored location available and reflect immediately
+        setHasStoredLocation(true)
+        setUserProfile(prev => prev ? {
+          ...prev,
+          latitude: latitude ?? prev.latitude ?? null,
+          longitude: longitude ?? prev.longitude ?? null,
+          location_updated_at: new Date().toISOString()
+        } : prev)
+        toast.success('Location updated')
         fetchWeatherData()
       }
     }
@@ -105,22 +145,26 @@ export default function DashboardPage() {
       } catch (e) {
         console.error('Failed to initialize auth token', e)
       }
+      
+      // Fetch user profile first to check for stored location
+      const hasStoredLoc = await fetchUserProfile()
+      
       await Promise.all([
         fetchUserHistory(),
-        hasLocation ? fetchWeatherData() : Promise.resolve()
+        hasStoredLoc ? fetchWeatherData() : Promise.resolve()
       ])
       setLoading(false)
     }
 
     initializeDashboard()
-  }, [hasLocation, isSignedIn])
+  }, [isSignedIn])
 
-  // Auto-fetch weather when location is available
+  // Auto-fetch weather when stored location is available
   useEffect(() => {
-    if (hasLocation && !weatherData) {
+    if (hasStoredLocation && !weatherData) {
       fetchWeatherData()
     }
-  }, [hasLocation])
+  }, [hasStoredLocation])
 
   const getWeatherIcon = (condition: string) => {
     const lowerCondition = condition.toLowerCase()
@@ -175,7 +219,19 @@ export default function DashboardPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {locationError ? (
+          {hasStoredLocation ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle className="h-4 w-4" />
+                <span>
+                  Location: {userProfile?.latitude?.toFixed(4)}, {userProfile?.longitude?.toFixed(4)}
+                </span>
+              </div>
+              <Button variant="outline" onClick={handleLocationUpdate} disabled={locationLoading}>
+                {locationLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : 'Update Location'}
+              </Button>
+            </div>
+          ) : locationError ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-red-600">
                 <AlertTriangle className="h-4 w-4" />
@@ -192,7 +248,7 @@ export default function DashboardPage() {
                 <span>Location: {latitude?.toFixed(4)}, {longitude?.toFixed(4)}</span>
               </div>
               <Button variant="outline" onClick={handleLocationUpdate} disabled={locationLoading}>
-                {locationLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : 'Update Location'}
+                {locationLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : 'Save to Profile'}
               </Button>
             </div>
           ) : (
