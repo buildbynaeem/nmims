@@ -1,0 +1,13 @@
+[build]
+# Build only the Next.js frontend in the monorepo
+base = "frontend"
+command = "npm run build"
+# With Next.js on Netlify, the plugin handles publishing from .next
+publish = ".next"
+
+[build.environment]
+# Use a widely supported Node version for Next.js builds
+NODE_VERSION = "20"
+
+[[plugins]]
+package = "@netlify/plugin-nextjs"
