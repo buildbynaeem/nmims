@@ -62,14 +62,20 @@ export default function SoilReportsPage() {
   }
 
   const renderSoilData = (data: SoilData) => {
-    const entries = Object.entries(data).filter(([k, v]) => v !== undefined && v !== null)
+    // Only show primitive values and arrays; hide nested JSON objects
+    const entries = Object.entries(data).filter(([_, v]) => {
+      if (v === undefined || v === null) return false
+      // Hide objects (except arrays) to avoid [object Object] noise
+      if (typeof v === 'object' && !Array.isArray(v)) return false
+      return true
+    })
     if (entries.length === 0) return <p className="text-sm text-muted-foreground">No structured soil data.</p>
     return (
       <ul className="list-disc list-inside text-sm space-y-1">
         {entries.map(([key, value]) => (
           <li key={key}>
             <span className="font-semibold capitalize">{key.replace(/_/g, " ")}: </span>
-            {Array.isArray(value) ? value.join(", ") : String(value)}
+            {Array.isArray(value) ? (value as unknown[]).join(", ") : String(value)}
           </li>
         ))}
       </ul>
@@ -78,6 +84,11 @@ export default function SoilReportsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Page Heading */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Soil Data & Recommendations:</h1>
+        <p className="text-muted-foreground">Upload a soil lab report image to extract key data and get tailored recommendations.</p>
+      </div>
       <Card>
         <CardHeader>
           <CardTitle>Soil Report OCR & Analysis</CardTitle>
@@ -103,12 +114,6 @@ export default function SoilReportsPage() {
                   {!report && <p className="text-sm text-muted-foreground">No analysis yet. Upload a report image and click analyze.</p>}
                   {report && (
                     <div className="space-y-4">
-                      {report.extracted_text && (
-                        <div>
-                          <p className="font-semibold">Extracted Text:</p>
-                          <p className="text-sm whitespace-pre-wrap">{report.extracted_text}</p>
-                        </div>
-                      )}
                       {report.soil_data && (
                         <div>
                           <p className="font-semibold">Soil Data:</p>
