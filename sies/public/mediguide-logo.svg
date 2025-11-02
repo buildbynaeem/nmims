@@ -1,0 +1,8 @@
+<svg width="200" height="120" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- MG Logo -->
+  <text x="20" y="70" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#3B82F6">M</text>
+  <text x="70" y="70" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#10B981">G</text>
+  
+  <!-- MediGuide Text -->
+  <text x="20" y="100" font-family="Arial, sans-serif" font-size="18" font-weight="600" fill="#374151">MediGuide</text>
+</svg>
