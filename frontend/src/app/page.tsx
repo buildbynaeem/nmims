@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { SignInButton, SignUpButton, SignedIn, SignedOut } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
+import LanguageToggle from '@/components/LanguageToggle'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Leaf, Camera, FileText, MessageSquare, Cloud, TrendingUp, Shield, Zap } from 'lucide-react'
 
@@ -26,6 +27,8 @@ export default function HomePage() {
                 </SignUpButton>
               </SignedOut>
               <SignedIn>
+                {/* Place language toggle to the left of the dashboard button */}
+                <LanguageToggle variant="inline" />
                 <Link href="/dashboard">
                   <Button>Go to Dashboard</Button>
                 </Link>

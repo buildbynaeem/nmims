@@ -3,6 +3,8 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { ClerkProvider } from '@clerk/nextjs'
 import { Toaster } from '@/components/ui/sonner'
+import { LanguageProvider } from '@/hooks/useLanguage'
+import LanguageToggle from '@/components/LanguageToggle'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -19,12 +21,15 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider>
-      <html lang="en">
-        <body className={inter.className}>
-          {children}
-          <Toaster />
-        </body>
-      </html>
+      <LanguageProvider>
+        <html lang="en">
+          <body className={inter.className}>
+            <LanguageToggle />
+            {children}
+            <Toaster />
+          </body>
+        </html>
+      </LanguageProvider>
     </ClerkProvider>
   )
 }

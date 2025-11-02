@@ -30,6 +30,10 @@ class Config:
     
     # Gemini API Configuration
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+
+    # Google Translate API Configuration
+    GOOGLE_CLOUD_PROJECT_ID = os.environ.get('GOOGLE_CLOUD_PROJECT_ID')
+    GOOGLE_TRANSLATE_API_KEY = os.environ.get('GOOGLE_TRANSLATE_API_KEY')
     
     # OpenWeatherMap API Configuration
     OPENWEATHER_API_KEY = os.environ.get('OPENWEATHER_API_KEY')

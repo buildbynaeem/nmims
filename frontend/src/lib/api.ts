@@ -200,7 +200,7 @@ class ApiService {
   }
 
   // Image Analysis API
-  async analyzeImage(
+  async analyzeCropImage(
     imageData: string, 
     analysisType: string = 'crop_health'
   ): Promise<ApiResponse<ImageAnalysis>> {
@@ -279,6 +279,18 @@ class ApiService {
   // Health Check
   async healthCheck(): Promise<ApiResponse> {
     return this.request('/health')
+  }
+
+  // Translation API
+  async translate(
+    texts: string[] | string,
+    target: 'en' | 'hi' | 'mr'
+  ): Promise<ApiResponse<{ translations: string[] }>> {
+    const body = Array.isArray(texts) ? { texts, target } : { text: texts, target }
+    return this.request('/translate', {
+      method: 'POST',
+      body: JSON.stringify(body)
+    })
   }
 }
 

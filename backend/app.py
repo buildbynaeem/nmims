@@ -8,6 +8,7 @@ from weather_service import weather_service
 import json
 from datetime import datetime
 import os
+import requests
 
 def create_app():
     """Application factory pattern."""
@@ -151,6 +152,13 @@ def register_routes(app):
             if not result['success']:
                 return jsonify({'error': result['error']}), 500
             
+            # Debug logging
+            app.logger.info(f"Gemini result: {result}")
+            app.logger.info(f"Gemini result type: {type(result)}")
+            app.logger.info(f"Gemini result keys: {result.keys() if isinstance(result, dict) else 'Not a dict'}")
+            app.logger.info(f"Analysis data: {result['analysis']}")
+            app.logger.info(f"Analysis type: {type(result['analysis'])}")
+            
             # Save analysis to database
             analysis = ImageAnalysis(
                 user_id=user.id,
@@ -162,7 +170,7 @@ def register_routes(app):
             db.session.add(analysis)
             db.session.commit()
             
-            return jsonify({
+            response_data = {
                 'success': True,
                 'data': {
                     'id': analysis.id,
@@ -170,7 +178,11 @@ def register_routes(app):
                     'analysis': result['analysis'],
                     'timestamp': analysis.created_at.isoformat()
                 }
-            })
+            }
+            
+            app.logger.info(f"Returning response: {response_data}")
+            app.logger.info(f"Response analysis field: {response_data['data']['analysis']}")
+            return jsonify(response_data)
             
         except Exception as e:
             app.logger.error(f"Image analysis error: {str(e)}")
@@ -404,6 +416,55 @@ def register_routes(app):
         except Exception as e:
             app.logger.error(f"Get user history error: {str(e)}")
             return jsonify({'error': 'Failed to fetch user history'}), 500
+
+    @app.route('/api/v1/translate', methods=['POST'])
+    @require_auth
+    def translate_texts():
+        """Translate text(s) into target language using Google Translate API.
+        Accepts JSON: { "text": string, "texts": string[], "target": "en|hi|mr" }
+        Returns: { success: true, translations: string[] }
+        """
+        try:
+            data = request.get_json() or {}
+            texts = data.get('texts') or data.get('text')
+            target = (data.get('target') or 'en').lower()
+
+            if not texts:
+                return jsonify({'error': 'text or texts is required'}), 400
+
+            if isinstance(texts, str):
+                texts = [texts]
+
+            # Allow only supported languages
+            supported = {'en', 'hi', 'mr'}
+            if target not in supported:
+                return jsonify({'error': 'Unsupported target language'}), 400
+
+            api_key = app.config.get('GOOGLE_TRANSLATE_API_KEY')
+            if not api_key:
+                return jsonify({'error': 'Translation API key not configured'}), 500
+
+            url = f'https://translation.googleapis.com/language/translate/v2?key={api_key}'
+            payload = {
+                'q': texts,
+                'target': target,
+                'format': 'text'
+            }
+
+            resp = requests.post(url, data=payload, timeout=10)
+            resp.raise_for_status()
+            body = resp.json()
+            translations = [item.get('translatedText', '') for item in body.get('data', {}).get('translations', [])]
+
+            return jsonify({'success': True, 'translations': translations})
+
+        except requests.HTTPError as e:
+            status = e.response.status_code if hasattr(e, 'response') and e.response else 500
+            app.logger.error(f'Translate API HTTP error: {str(e)}')
+            return jsonify({'error': 'Translation service error'}), status
+        except Exception as e:
+            app.logger.error(f'Translation error: {str(e)}')
+            return jsonify({'error': 'Failed to translate text'}), 500
 
 if __name__ == '__main__':
     app = create_app()
